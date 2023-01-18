@@ -1,35 +1,38 @@
 package embed
 
 import (
+	"context"
 	"embed"
 	"os"
 	"path"
+
+	"github.com/projectred/sonico/output/file"
+	"github.com/projectred/sonico/walk"
 )
 
-func CoverCopy(fs embed.FS, dir, targetPath string) error {
-	return Copy(fs, dir, targetPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC)
+func CoverCopy(fs embed.FS, dir, targetPath string, rename bool) error {
+	return Copy(fs, dir, targetPath, rename, os.O_CREATE|os.O_WRONLY|os.O_TRUNC)
 }
 
-func AppendCopy(fs embed.FS, dir, targetPath string) error {
-	return Copy(fs, dir, targetPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND)
+func AppendCopy(fs embed.FS, dir, targetPath string, rename bool) error {
+	return Copy(fs, dir, targetPath, rename, os.O_CREATE|os.O_WRONLY|os.O_APPEND)
 }
 
-func Copy(fs embed.FS, dir, targetPath string, flag int) error {
-	files, err := fs.ReadDir(dir)
-	if err != nil {
-		return err
-	}
-	if err := os.MkdirAll(targetPath, 0754); err != nil {
-		return err
-	}
-	for _, file := range files {
-		datas, err := fs.ReadFile(path.Join(dir, file.Name()))
-		if err != nil {
-			return err
-		}
+func Copy(fs embed.FS, dir, targetPath string, rename bool, flag int) error {
+	return walk.NewWalker([]walk.Visitor{
+		func(ctx context.Context, stack walk.Nodes, node walk.Node) error {
+			if rename {
+				stack = stack[1:]
+			}
+			if err := os.MkdirAll(path.Join(targetPath, stack.Path()), 0754); err != nil {
+				return err
+			}
+			datas, err := fs.ReadFile(path.Join(dir, stack.Path(), node.Key()))
+			if err != nil {
+				return err
+			}
 
-		if err := func() error {
-			writer, err := os.OpenFile(path.Join(targetPath, file.Name()), flag, 0644)
+			writer, err := os.OpenFile(path.Join(targetPath, stack.Path(), node.Key()), flag, 0644)
 			defer writer.Close()
 			if err != nil {
 				return err
@@ -38,9 +41,5 @@ func Copy(fs embed.FS, dir, targetPath string, flag int) error {
 				return err
 			}
 			return nil
-		}(); err != nil {
-			return err
-		}
-	}
-	return nil
+		}}, nil).Walk(context.Background(), nil, file.NewFS(fs, dir))
 }

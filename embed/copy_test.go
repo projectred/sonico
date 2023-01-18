@@ -13,7 +13,7 @@ var fs embed.FS
 
 func TestCopy(t *testing.T) {
 	targetDir := path.Join(t.TempDir(), "config")
-	if err := Copy(fs, "test", targetDir, os.O_CREATE|os.O_WRONLY); err != nil {
+	if err := Copy(fs, "test", targetDir, true, os.O_CREATE|os.O_WRONLY); err != nil {
 		t.Fatal(err)
 	}
 	files, err := os.ReadDir(targetDir)
@@ -44,13 +44,13 @@ func TestCopy(t *testing.T) {
 
 func TestConveyCopy(t *testing.T) {
 	targetDir := path.Join(t.TempDir(), "config")
-	if err := Copy(fs, "test", targetDir, os.O_CREATE|os.O_WRONLY); err != nil {
+	if err := Copy(fs, "test", targetDir, true, os.O_CREATE|os.O_WRONLY); err != nil {
 		t.Fatal(err)
 	}
 	if err := os.WriteFile(path.Join(targetDir, "test_data.json"), []byte("just a test"), 0666); err != nil {
 		t.Fatal(err)
 	}
-	if err := CoverCopy(fs, "test", targetDir); err != nil {
+	if err := CoverCopy(fs, "test", targetDir, true); err != nil {
 		t.Fatal(err)
 	}
 	files, err := os.ReadDir(targetDir)
@@ -81,10 +81,10 @@ func TestConveyCopy(t *testing.T) {
 
 func TestAppendCopy(t *testing.T) {
 	targetDir := path.Join(t.TempDir(), "config")
-	if err := Copy(fs, "test", targetDir, os.O_CREATE|os.O_WRONLY); err != nil {
+	if err := Copy(fs, "test", targetDir, true, os.O_CREATE|os.O_WRONLY); err != nil {
 		t.Fatal(err)
 	}
-	if err := AppendCopy(fs, "test", targetDir); err != nil {
+	if err := AppendCopy(fs, "test", targetDir, true); err != nil {
 		t.Fatal(err)
 	}
 	files, err := os.ReadDir(targetDir)
